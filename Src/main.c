@@ -46,9 +46,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 osThreadId defaultTaskHandle;
-osThreadId Task_function_handle[2];
+osThreadId Task_function_handle[3];
 static const char *pcText_task1 = "Task 1 is running.\r\n";
 static const char *pcText_task2 = "Task 2 is running.\r\n";
+static const char *pcText_task3 = "Periodic task is running.\r\n";
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -57,7 +58,8 @@ static const char *pcText_task2 = "Task 2 is running.\r\n";
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 void StartDefaultTask(void const * argument);
-void vTask_function(void const * argument);
+void vContinuous_task(void const * argument);
+void vPeriodic_task(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -126,11 +128,13 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  /* definition of Task and creation of Task1 and Task2 */
-  osThreadDef(Task1, vTask_function, osPriorityAboveNormal, 1, 100);
-  osThreadDef(Task2, vTask_function, osPriorityHigh, 1, 100);
+  /* definition of Continuous and Periodic tasks and creation of Task1, Task2 and Task3 */
+  osThreadDef(Task1, vContinuous_task, osPriorityAboveNormal, 1, 100);
+  osThreadDef(Task2, vContinuous_task, osPriorityAboveNormal, 1, 100);
+  osThreadDef(Periodic, vPeriodic_task, osPriorityHigh, 1, 100);
   Task_function_handle[0] = osThreadCreate(osThread(Task1), (void *) pcText_task1);
   Task_function_handle[1] = osThreadCreate(osThread(Task2), (void *) pcText_task2);
+  Task_function_handle[2] = osThreadCreate(osThread(Periodic), (void *) pcText_task3);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -221,9 +225,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
-    
-    
-                 
   /* init code for USB_DEVICE */
   //MX_USB_DEVICE_Init();
 
@@ -236,17 +237,39 @@ void StartDefaultTask(void const * argument)
   /* USER CODE END 5 */ 
 }
 
-/* USER CODE BEGIN Header_vTask_function */
+/* USER CODE BEGIN Header_vContinuous_task */
 /**
-  * @brief  Function implementing the vTask_function thread.
+  * @brief  Function implementing the vContinuous_task thread.
   * @param  argument: pcTaskName 
   * @retval None
   */
-/* USER CODE END Header_vTask_function */
-void vTask_function(void const * argument)
+/* USER CODE END Header_vContinuous_task */
+void vContinuous_task(void const * argument)
 {
 
   /* USER CODE BEGIN 6 */
+  char *pcTask_name;
+  pcTask_name = (char *) argument; 
+  /* Infinite loop */
+  for(;;)
+  {
+    printf(pcTask_name);
+  }
+  osThreadTerminate(osThreadGetId()); /* Not supposed to reach here */
+  /* USER CODE END 6 */ 
+}
+
+/* USER CODE BEGIN Header_vPeriodic_task */
+/**
+  * @brief  Function implementing the vPeriodic_task thread.
+  * @param  argument: pcTaskName 
+  * @retval None
+  */
+/* USER CODE END Header_vPeriodic_task */
+void vPeriodic_task(void const * argument)
+{
+
+  /* USER CODE BEGIN 7 */
   uint32_t xPrevious_wake_time = osKernelSysTick();
   char *pcTask_name;
   pcTask_name = (char *) argument; 
@@ -254,10 +277,10 @@ void vTask_function(void const * argument)
   for(;;)
   {
     printf(pcTask_name);
-    osDelayUntil(&xPrevious_wake_time, 200);
+    osDelayUntil(&xPrevious_wake_time, 1);
   }
   osThreadTerminate(osThreadGetId()); /* Not supposed to reach here */
-  /* USER CODE END 6 */ 
+  /* USER CODE END 7 */ 
 }
 
 /**
